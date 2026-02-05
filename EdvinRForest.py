@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from pandas.core.accessor import Accessor
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split, KFold
@@ -35,7 +36,7 @@ removals = ["increase_stock",
               "visibility"
               ]
 
-cols_to_drop = removals + month
+cols_to_drop = removals + month #month, day_of_week, hour_of_day
 #filter inputs
 x = df.drop(columns=cols_to_drop)
 #define output
@@ -46,8 +47,10 @@ y = (y == 1).astype(int)
 #define and fit model
 model = RandomForestClassifier(
     criterion="entropy",
+    min_samples_split=2,
     min_samples_leaf=1,
-    n_estimators=500
+    n_estimators=100,
+    max_features="sqrt",
 )
 
 #split data
@@ -69,7 +72,7 @@ def k_fold_loop(model, x, y, r = 0.5, n_splits = 10):
     recall = 0
     kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
     for i, (train_index, test_index) in enumerate(kf.split(x)):
-        print(f"running split {i + 1} out of {n_splits}")
+        #print(f"running split {i + 1} out of {n_splits}")
         x_train, x_test = x.iloc[train_index], x.iloc[test_index]
         y_train, y_test = y.iloc[train_index], y.iloc[test_index]
         model.fit(x_train, y_train)
@@ -81,8 +84,8 @@ def k_fold_loop(model, x, y, r = 0.5, n_splits = 10):
         # accumulate scores
         f1 += f1_score(y_test, pred)
         accuracy += accuracy_score(y_test, pred)
-        roc_auc += roc_auc_score(y_test, pred)
-        pr_auc += average_precision_score(y_test, pred)
+        roc_auc += roc_auc_score(y_test, prob)
+        pr_auc += average_precision_score(y_test, prob)
         precision += precision_score(y_test, pred)
         recall += recall_score(y_test, pred)
 
@@ -109,6 +112,13 @@ print(f"pr-auc = {average_precision_score(y_test, pred)}")
 print(f"precision = {precision_score(y_test, pred)}")
 print(f"recall = {recall_score(y_test, pred)}")
 """
-print(k_fold_loop(model, x, y, r))
+#print(k_fold_loop(model, x, y, r))
 
+def grid_search(model, x, y):
+    rs = np.linspace(0.1, 0.8, 50)
+    for r in rs:
+        scores = k_fold_loop(model, x, y, r, n_splits)
+        print(f"r: {r}, scores: {scores}")
+
+grid_search(model, x, y)
 plt.show()
