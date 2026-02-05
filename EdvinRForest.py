@@ -117,8 +117,8 @@ def k_fold_loop(model, x, y, r = 0.5, n_splits = 10, plot_curves = False):
     f1 = 0
     roc_auc = 0
     pr_auc = 0
-    precision = 0
-    recall = 0
+    pr = 0
+    rec = 0
     tprs = []
     aucs = []
     precisions = []
@@ -141,18 +141,18 @@ def k_fold_loop(model, x, y, r = 0.5, n_splits = 10, plot_curves = False):
         accuracy += accuracy_score(y_test, pred)
         roc_auc += roc_auc_score(y_test, prob)
         pr_auc += average_precision_score(y_test, prob)
-        precision += precision_score(y_test, pred)
-        recall += recall_score(y_test, pred)
+        pr += precision_score(y_test, pred)
+        rec += recall_score(y_test, pred)
 
         #For plotting curves
         if plot_curves:
             # ---- ROC ----
             fpr, tpr, _ = roc_curve(y_test, prob)
-            roc_auc = auc(fpr, tpr)
+            roc_auc_for_plt = auc(fpr, tpr)
             interp_tpr = np.interp(mean_fpr, fpr, tpr)
             interp_tpr[0] = 0.0
             tprs.append(interp_tpr)
-            aucs.append(roc_auc)
+            aucs.append(roc_auc_for_plt)
             # ---- PR ----
             precision, recall, _ = precision_recall_curve(y_test, prob)
             ap = average_precision_score(y_test, prob)
@@ -163,8 +163,8 @@ def k_fold_loop(model, x, y, r = 0.5, n_splits = 10, plot_curves = False):
     scores = {
         "accuracy": accuracy / n_splits,
         "f1": f1 / n_splits,
-        "precision": precision / n_splits,
-        "recall": recall / n_splits,
+        "precision": pr / n_splits,
+        "recall": rec / n_splits,
         "roc_auc": roc_auc / n_splits,
         "pr_auc": pr_auc / n_splits
     }
@@ -201,7 +201,13 @@ def grid_search_r(model, x, y, start = 0.15, stop = 0.64, num = 50):
 r = 0.32
 def get_roc_pr_auc(model, x, y, r):
     scores = k_fold_loop(model, x, y, r, plot_curves=True)
-    print(f"ROC AUC: {scores['roc_auc']:.3f} PR-AUC: {scores['pr_auc']:.3f}")
+    print(f"r: {r} | "
+          f"ROC AUC: {scores['roc_auc']:.3f} | "
+          f"PR-AUC: {scores['pr_auc']:.3f} | "
+          f"Accurancy: {scores['accuracy']:.3f} | "
+          f"F1 score: {scores['f1']:.3f} | "
+          f"Precision: {scores['precision']:.3f} | "
+          f"Recall: {scores['recall']:.3f} ")
 
 grid_search_r(model, x, y)
 get_roc_pr_auc(model, x, y, r)
