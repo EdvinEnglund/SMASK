@@ -1,4 +1,5 @@
 import pandas as pd
+from pandas.core.accessor import Accessor
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split, KFold
 from sklearn.metrics import (accuracy_score,
@@ -54,43 +55,46 @@ model = RandomForestClassifier(
 
 #create K fold indicies
 n_splits = 10
-kf = KFold(n_splits=10, shuffle=True, random_state=42)
+
 #adjust probability threshhold
-r = 0.35
+r = 0.3
 
-#set evaluation metrics
-accuracy = 0
-f1 = 0
-roc_auc = 0
-pr_auc =0
-precision = 0
-recall = 0
+def k_fold_loop(model, x, y, r = 0.5, n_splits = 10):
+    #set evaluation metrics
+    accuracy = 0
+    f1 = 0
+    roc_auc = 0
+    pr_auc = 0
+    precision = 0
+    recall = 0
+    kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
+    for i, (train_index, test_index) in enumerate(kf.split(x)):
+        print(f"running split {i + 1} out of {n_splits}")
+        x_train, x_test = x.iloc[train_index], x.iloc[test_index]
+        y_train, y_test = y.iloc[train_index], y.iloc[test_index]
+        model.fit(x_train, y_train)
 
-for train_index, test_index in kf.split(x):
-    x_train, x_test = x.iloc[train_index], x.iloc[test_index]
-    y_train, y_test = y.iloc[train_index], y.iloc[test_index]
-    model.fit(x_train, y_train)
+        # predict probabilities
+        prob = model.predict_proba(x_test)[:, 1]
+        pred = (prob >= r).astype(int)
 
-    # predict probabilities
-    prob = model.predict_proba(x_test)[:, 1]
-    pred = (prob >= r).astype(int)
+        # accumulate scores
+        f1 += f1_score(y_test, pred)
+        accuracy += accuracy_score(y_test, pred)
+        roc_auc += roc_auc_score(y_test, pred)
+        pr_auc += average_precision_score(y_test, pred)
+        precision += precision_score(y_test, pred)
+        recall += recall_score(y_test, pred)
 
-    # accumulate scores
-    f1 += f1_score(y_test, pred)
-    accuracy += accuracy_score(y_test, pred)
-    roc_auc += roc_auc_score(y_test, pred)
-    pr_auc += average_precision_score(y_test, pred)
-    precision += precision_score(y_test, pred)
-    recall += recall_score(y_test, pred)
-
-print(f"Accuracy (r={r}): {accuracy / n_splits}")
-print(f"F1 (r={r}):  {f1 / n_splits}")
-print(f"Precision (r={r}):  {precision / n_splits}")
-print(f"Recall (r={r}): {recall / n_splits}")
-print(f"ROC AUC: ", roc_auc / n_splits)
-print(f"PR AUC: ", pr_auc / n_splits)
-
-
+    scores = {
+        "accuracy": accuracy / n_splits,
+        "f1": f1 / n_splits,
+        "precision": precision / n_splits,
+        "recall": recall / n_splits,
+        "roc_auc": roc_auc / n_splits,
+        "pr_auc": pr_auc / n_splits
+    }
+    return scores
 #plot au-roc
 #fpr, tpr, _ = roc_curve(y_test, prob, pos_label = 1)
 #plt.plot(fpr, tpr)
@@ -105,5 +109,6 @@ print(f"pr-auc = {average_precision_score(y_test, pred)}")
 print(f"precision = {precision_score(y_test, pred)}")
 print(f"recall = {recall_score(y_test, pred)}")
 """
+print(k_fold_loop(model, x, y, r))
 
 plt.show()
