@@ -114,11 +114,35 @@ print(f"recall = {recall_score(y_test, pred)}")
 """
 #print(k_fold_loop(model, x, y, r))
 
-def grid_search(model, x, y):
-    rs = np.linspace(0.1, 0.8, 50)
+def grid_search_r(model, x, y):
+    rs = np.linspace(0.15, 0.64, 50)
+    accuracies = []
+    f1s = []
+    precisions = []
+    recalls = []
     for r in rs:
         scores = k_fold_loop(model, x, y, r, n_splits)
-        print(f"r: {r}, scores: {scores}")
+        accuracies.append(scores["accuracy"])
+        f1s.append(scores["f1"])
+        precisions.append(scores["precision"])
+        recalls.append(scores["recall"])
+        print(f"r: {r:.2f}")
+        print(f"Accurancy: {scores['accuracy']:.3f} "
+              f"F1 score: {scores['f1']:.3f} "
+              f"Precision: {scores['precision']:.3f} "
+              f"Recall: {scores['recall']:.3f} ")
+    plt.plot(rs, accuracies, label="accuracy")
+    plt.plot(rs, f1s, label="f1")
+    plt.plot(rs, precisions, label="precision")
+    plt.plot(rs, recalls, label="recall")
+    plt.legend()
+    plt.xlabel("r")
+    plt.show()
 
-grid_search(model, x, y)
-plt.show()
+r = 0.32
+def get_roc_pr_auc(model, x, y, r):
+    scores = k_fold_loop(model, x, y, r)
+    print(f"ROC AUC: {scores['roc_auc']:.3f} PR-AUC: {scores['pr_auc']:.3f}")
+
+grid_search_r(model, x, y)
+get_roc_pr_auc(model, x, y, r)
