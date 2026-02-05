@@ -10,7 +10,7 @@ mapping = {"low_bike_demand": -1, "high_bike_demand": 1}
 df["increase_stock"] = df["increase_stock"].map(mapping)
 
 #drop unnecessary features
-df = df.drop(["snow", "visibility", "holiday", "weekday"], axis = 1)
+df = df.drop(["snow"], axis = 1)
 
 #make snowdepth categorical:
 df["snowdepth"] = df["snowdepth"].apply(lambda x: 1 if x > 0 else 0)
@@ -37,5 +37,5 @@ min_max_scale(df, scaling_columns)
 train_df, test_df = train_test_split(df, test_size=0.3, random_state=42)
 
 
-train_df.to_csv('preprocessed_training_data.csv', index = False)
-test_df.to_csv('preprocessed_testing_data.csv', index = False)
+train_df.to_csv('full_preprocessed_training_data.csv', index = False)
+test_df.to_csv('full_preprocessed_testing_data.csv', index = False)
