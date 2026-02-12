@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import sklearn.discriminant_analysis as skl_da 
+import sklearn.model_selection as skl_ms
 from sklearn.model_selection import KFold
 from sklearn.metrics import (
     accuracy_score,
@@ -22,12 +23,14 @@ pd.options.display.max_rows = None
 # 1) READ DATA
 # -----------------------------
 
-df = pd.read_csv('preprocessed_training_data.csv')
+df = pd.read_csv('full_preprocessed_training_data.csv')
 
 #define potential removals
 month = [c for c in df.columns if c.startswith("month")]
 day_of_week = [c for c in df.columns if c.startswith("day_of_week")]
 hour_of_day = [c for c in df.columns if c.startswith("hour_of_day")]
+
+# Remove features "summertime", "dew", "snowdepth", "holiday", "weekday", "visibility", r: 0.26
 
 removals = ["increase_stock",
               #"windspeed",
@@ -43,7 +46,7 @@ removals = ["increase_stock",
               "visibility"
               ]
 
-cols_to_drop = removals #+ month #+ hour_of_day #+ day_of_week
+cols_to_drop = removals #+ month #+ hour_of_day + day_of_week
 
 existing_cols_to_drop = [col for col in cols_to_drop if col in df.columns]
 x = df.drop(columns=existing_cols_to_drop)
@@ -56,7 +59,7 @@ y = (y == 1).astype(int)   # convert -1 → 0
 # 2) DEFINE MODEL
 # -----------------------------
 
-model = skl_da.LinearDiscriminantAnalysis() # LDA
+# model = skl_da.LinearDiscriminantAnalysis() # LDA
 # model = skl_da.QuadraticDiscriminantAnalysis(reg_param=0.1) # QDA
 
 # -----------------------------
@@ -196,7 +199,7 @@ def k_fold_loop(model, x, y, r=0.5, n_splits=10, plot_curves=False):
 # 5) THRESHOLD GRID SEARCH 
 # -----------------------------
 
-def grid_search_r(model, x, y, start=0.15, stop=0.55, num=40):
+def grid_search_r(model, x, y, start=0.15, stop=0.95, num=80):
 
     rs = np.linspace(start, stop, num)
 
@@ -234,8 +237,9 @@ def grid_search_r(model, x, y, start=0.15, stop=0.55, num=40):
 r = 0.26  # From grid search, this is the best threshold for F1 score
 
 def get_roc_pr_auc(model, x, y, r):
-    scores = k_fold_loop(model, x, y, r, plot_curves=True)
+    scores = k_fold_loop(model, x, y, r, plot_curves=False)
 
+    print(f"REMOVALS: {removals}")
     print(f"r: {r} | "
           f"ROC AUC: {scores['roc_auc']:.3f} | "
           f"PR-AUC: {scores['pr_auc']:.3f} | "
@@ -246,7 +250,7 @@ def get_roc_pr_auc(model, x, y, r):
 
 # RUN EVERYTHING
 # grid_search_r(model, x, y)
-get_roc_pr_auc(model, x, y, r)
+# get_roc_pr_auc(model, x, y, r)
 
 
 # -----------------
@@ -261,4 +265,45 @@ get_roc_pr_auc(model, x, y, r)
 # Remove features "summertime", "dew", "snowdepth", "holiday", "weekday", "visibility", r: 0.26
 # | ROC AUC: 0.921 | PR-AUC: 0.735 | Accuracy: 0.869 | F1: 0.683 | Precision: 0.610 | Recall: 0.787 
 
-# ____QDA_____
+
+# ----------------
+# 8) TEST
+# ----------------
+
+model = skl_da.LinearDiscriminantAnalysis().fit(x, y)
+
+def test_model(model):
+    bikes = pd.read_csv('full_preprocessed_testing_data.csv')
+    X_test = bikes.drop(columns=cols_to_drop)
+    y_test = bikes['increase_stock']
+    y_test = (y_test == 1).astype(int)
+    probabilities = model.predict_proba(X_test)[:,1]
+    pred = (probabilities >= r).astype(int)
+    f1_test = f1_score(y_test, pred)
+    accuracy_test = accuracy_score(y_test, pred)
+    roc_auc_test = roc_auc_score(y_test, probabilities)
+    pr_auc_test = average_precision_score(y_test, probabilities)
+    pr_test = precision_score(y_test, pred)
+    rec_test = recall_score(y_test, pred)
+    
+    scores = {
+    "accuracy": accuracy_test,
+    "f1": f1_test,
+    "precision": pr_test,
+    "recall": rec_test,
+    "roc_auc": roc_auc_test,
+    "pr_auc": pr_auc_test
+    }
+
+    return scores
+
+scores = test_model(model)
+print("TEST RUN")
+print(f"r: {r} | "
+        f"ROC AUC: {scores['roc_auc']:.3f} | "
+        f"PR-AUC: {scores['pr_auc']:.3f} | "
+        f"Accuracy: {scores['accuracy']:.3f} | "
+        f"F1: {scores['f1']:.3f} | "
+        f"Precision: {scores['precision']:.3f} | "
+        f"Recall: {scores['recall']:.3f} ")
+# 
