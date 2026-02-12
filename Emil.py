@@ -23,7 +23,7 @@ pd.options.display.max_rows = None
 # 1) READ DATA
 # -----------------------------
 
-df = pd.read_csv('full_preprocessed_training_data.csv')
+df = pd.read_csv('strat_preprocessed_training_data.csv')
 
 #define potential removals
 month = [c for c in df.columns if c.startswith("month")]
@@ -34,19 +34,19 @@ hour_of_day = [c for c in df.columns if c.startswith("hour_of_day")]
 
 removals = ["increase_stock",
               #"windspeed",
-              "summertime",
+              #"summertime",
               #"precip",
               #"humidity",
-              "dew",
+              #"dew",
               #"temp",
               #"cloudcover",
-              "snowdepth",
-              "holiday",
+              #"snowdepth",
+              #"holiday",
               "weekday",
               "visibility"
               ]
 
-cols_to_drop = removals #+ month #+ hour_of_day + day_of_week
+cols_to_drop = removals
 
 existing_cols_to_drop = [col for col in cols_to_drop if col in df.columns]
 x = df.drop(columns=existing_cols_to_drop)
@@ -59,7 +59,7 @@ y = (y == 1).astype(int)   # convert -1 → 0
 # 2) DEFINE MODEL
 # -----------------------------
 
-# model = skl_da.LinearDiscriminantAnalysis() # LDA
+model = skl_da.LinearDiscriminantAnalysis() # LDA
 # model = skl_da.QuadraticDiscriminantAnalysis(reg_param=0.1) # QDA
 
 # -----------------------------
@@ -234,7 +234,7 @@ def grid_search_r(model, x, y, start=0.15, stop=0.95, num=80):
 # 6) FINAL EVALUATION
 # -----------------------------
 
-r = 0.26  # From grid search, this is the best threshold for F1 score
+r = 0.33  # From grid search, this is the best threshold for F1 score
 
 def get_roc_pr_auc(model, x, y, r):
     scores = k_fold_loop(model, x, y, r, plot_curves=False)
@@ -254,17 +254,19 @@ def get_roc_pr_auc(model, x, y, r):
 
 
 # -----------------
-# 7) RESULTS
+# 7) PERFORMANCE EVALUATION
 # -----------------
 
 # _____LDA_____
 
-# All features, r: 0.26 
-# | ROC AUC: 0.922 | PR-AUC: 0.743 | Accuracy: 0.865 | F1: 0.673 | Precision: 0.603 | Recall: 0.771 
+# All features (NOT STRATIFIED)
+# r: 0.24 | ROC AUC: 0.921 | PR-AUC: 0.744 | Accuracy: 0.863 | F1: 0.673 | Precision: 0.597 | Recall: 0.783
 
-# Remove features "summertime", "dew", "snowdepth", "holiday", "weekday", "visibility", r: 0.26
-# | ROC AUC: 0.921 | PR-AUC: 0.735 | Accuracy: 0.869 | F1: 0.683 | Precision: 0.610 | Recall: 0.787 
+# REMOVE (NOT STRATIFIED): ['increase_stock', 'summertime', 'precip', 'dew', 'snowdepth', 'visibility']
+# r: 0.25 | ROC AUC: 0.920 | PR-AUC: 0.732 | Accuracy: 0.870 | F1: 0.688 | Precision: 0.611 | Recall: 0.798 
 
+# REMOVE (STRATIFIED):['increase_stock', 'weekday', 'visibility']
+# r: 0.33 | ROC AUC: 0.918 | PR-AUC: 0.736 | Accuracy: 0.874 | F1: 0.670 | Precision: 0.634 | Recall: 0.720 
 
 # ----------------
 # 8) TEST
@@ -273,7 +275,7 @@ def get_roc_pr_auc(model, x, y, r):
 model = skl_da.LinearDiscriminantAnalysis().fit(x, y)
 
 def test_model(model):
-    bikes = pd.read_csv('full_preprocessed_testing_data.csv')
+    bikes = pd.read_csv('strat_preprocessed_testing_data.csv')
     X_test = bikes.drop(columns=cols_to_drop)
     y_test = bikes['increase_stock']
     y_test = (y_test == 1).astype(int)
@@ -297,7 +299,9 @@ def test_model(model):
 
     return scores
 
+
 scores = test_model(model)
+
 print("TEST RUN")
 print(f"r: {r} | "
         f"ROC AUC: {scores['roc_auc']:.3f} | "
@@ -306,4 +310,13 @@ print(f"r: {r} | "
         f"F1: {scores['f1']:.3f} | "
         f"Precision: {scores['precision']:.3f} | "
         f"Recall: {scores['recall']:.3f} ")
-# 
+
+
+# _____LDA_____
+
+# REMOVE (NOT STRATIFIED): ['increase_stock', 'summertime', 'precip', 'dew', 'snowdepth', 'visibility']
+# r: 0.25 | ROC AUC: 0.892 | PR-AUC: 0.633 | Accuracy: 0.831 | F1: 0.585 | Precision: 0.487 | Recall: 0.731
+
+# REMOVE (STRATIFIED): ['increase_stock', 'weekday', 'visibility']
+# r: 0.33 | ROC AUC: 0.900 | PR-AUC: 0.693 | Accuracy: 0.856 | F1: 0.639 | Precision: 0.581 | Recall: 0.709 
+
