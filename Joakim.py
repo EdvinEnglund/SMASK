@@ -323,6 +323,5 @@ print(f"r: {r} | "
         f"F1: {f1:.3f} | "
         f"Precision: {pr:.3f} | "
         f"Recall: {rec:.3f} ")
-
-# samma som edvin B = 300 M = 2 r: 0.43 | ROC AUC: 0.895 | PR-AUC: 0.710 | Accuracy: 0.851 | F1: 0.634 | Precision: 0.578 | Recall: 0.712  
+ 
 # Resultat testdata B = 300 M = 2 r: 0.43 | ROC AUC: 0.843 | PR-AUC: 0.509 | Accuracy: 0.817 | F1: 0.537 | Precision: 0.455 | Recall: 0.654 
