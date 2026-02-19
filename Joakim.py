@@ -23,8 +23,8 @@ pd.options.display.max_rows = None
 # 1) READ DATA
 # -----------------------------
 
-df = pd.read_csv('preprocessed_training_data.csv')
-
+df = pd.read_csv('full_preprocessed_training_data.csv')
+test_df = pd.read_csv('full_preprocessed_testing_data.csv')
 #define potential removals
 month = [c for c in df.columns if c.startswith("month")]
 day_of_week = [c for c in df.columns if c.startswith("day_of_week")]
@@ -39,8 +39,8 @@ removals = ["increase_stock",
               #"temp",
               "cloudcover",
               "snowdepth",
-              "holiday",
-              "weekday",
+              #"holiday",
+              #"weekday",
               "visibility"
               ]
 
@@ -53,6 +53,33 @@ x = df.drop(columns=existing_cols_to_drop)
 y = df['increase_stock']
 y = (y == 1).astype(int)   # convert -1 → 0
 
+test_month = [c for c in test_df.columns if c.startswith("month")]
+test_day_of_week = [c for c in test_df.columns if c.startswith("day_of_week")]
+test_hour_of_day = [c for c in test_df.columns if c.startswith("hour_of_day")]
+
+test_removals = ["increase_stock",
+              "windspeed",
+              #"summertime",
+              "precip",
+              #"humidity",
+              "dew",
+              #"temp",
+              "cloudcover",
+              "snowdepth",
+              #"holiday",
+              #"weekday",
+              "visibility"
+              ]
+
+test_cols_to_drop = test_removals + test_month #+  hour_of_day #day_of_week
+
+test_existing_cols_to_drop = [col for col in test_cols_to_drop if col in test_df.columns]
+test_x = test_df.drop(columns=test_existing_cols_to_drop)
+
+# define output
+test_y = test_df['increase_stock']
+test_y = (test_y == 1).astype(int)   # convert -1 → 0
+
 # -----------------------------
 # 2) DEFINE ADABOOST MODEL
 # -----------------------------
@@ -64,7 +91,7 @@ base_learner = DecisionTreeClassifier(
 
 model = AdaBoostClassifier(
     estimator=base_learner,
-    n_estimators=200,
+    n_estimators=300,
     learning_rate=0.05,
     random_state=42
 )
@@ -130,6 +157,33 @@ def plot_auc_curves(tprs, aucs, precisions, aps, mean_fpr, mean_recall):
 # 4) K-FOLD LOOP 
 # -----------------------------
 
+accuracy = 0
+f1 = 0
+roc_auc = 0
+pr_auc = 0
+pr = 0
+rec = 0
+
+tprs = []
+aucs = []
+precisions = []
+aps = []
+
+mean_fpr = np.linspace(0, 1, 100)
+mean_recall = np.linspace(0, 1, 100)
+
+model.fit(x, y)
+r=0.43
+prob = model.predict_proba(test_x)[:, 1]
+pred = (prob >= r).astype(int)
+
+f1 = f1_score(test_y, pred)
+accuracy = accuracy_score(test_y, pred)
+roc_auc = roc_auc_score(test_y, prob)
+pr_auc = average_precision_score(test_y, prob)
+pr = precision_score(test_y, pred)
+rec = recall_score(test_y, pred)
+
 def k_fold_loop(model, x, y, r=0.5, n_splits=10, plot_curves=False):
 
     accuracy = 0
@@ -146,6 +200,11 @@ def k_fold_loop(model, x, y, r=0.5, n_splits=10, plot_curves=False):
 
     mean_fpr = np.linspace(0, 1, 100)
     mean_recall = np.linspace(0, 1, 100)
+
+    model.fit(x, y)
+
+    prob = model.predict_proba(test_x)[:, 1]
+    pred = (prob >= r).astype(int)
 
     kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
 
@@ -241,7 +300,7 @@ def grid_search_r(model, x, y, start=0.15, stop=0.55, num=40):
 # 6) FINAL EVALUATION
 # -----------------------------
 
-r = 0.42  # From grid search, this is the best threshold for F1 score
+#r = 0.43  # From grid search, this is the best threshold for F1 score
 
 def get_roc_pr_auc(model, x, y, r):
     scores = k_fold_loop(model, x, y, r, plot_curves=True)
@@ -256,9 +315,13 @@ def get_roc_pr_auc(model, x, y, r):
 
 # RUN EVERYTHING
 #grid_search_r(model, x, y)
-get_roc_pr_auc(model, x, y, r)
-
-
-# samma som edvin r: 0.42 | ROC AUC: 0.889 | PR-AUC: 0.692 | Accuracy: 0.847 | F1: 0.623 | Precision: 0.574 | Recall: 0.692 
-
-# all features r: 0.42 | ROC AUC: 0.888 | PR-AUC: 0.690 | Accuracy: 0.845 | F1: 0.613 | Precision: 0.566 | Recall: 0.678 
+#get_roc_pr_auc(model, x, y, r)
+print(f"r: {r} | "
+        f"ROC AUC: {roc_auc:.3f} | "
+        f"PR-AUC: {pr_auc:.3f} | "
+        f"Accuracy: {accuracy:.3f} | "
+        f"F1: {f1:.3f} | "
+        f"Precision: {pr:.3f} | "
+        f"Recall: {rec:.3f} ")
+ 
+# Resultat testdata B = 300 M = 2 r: 0.43 | ROC AUC: 0.843 | PR-AUC: 0.509 | Accuracy: 0.817 | F1: 0.537 | Precision: 0.455 | Recall: 0.654 

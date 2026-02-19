@@ -8,8 +8,32 @@ import sklearn.discriminant_analysis as skl_da
 
 # Data
 bikes = pd.read_csv('preprocessed_training_data.csv')
-X = bikes.drop(columns='increase_stock')
 y = bikes['increase_stock']
+
+
+#define potential removals
+month = [c for c in bikes.columns if c.startswith("month")]
+day_of_week = [c for c in bikes.columns if c.startswith("day_of_week")]
+hour_of_day = [c for c in bikes.columns if c.startswith("hour_of_day")]
+
+removals = ["increase_stock",
+              #"windspeed",
+              "summertime",
+              #"precip",
+              #"humidity",
+              "dew",
+              #"temp",
+              #"cloudcover",
+              "snowdepth",
+              "holiday",
+              "weekday",
+              "visibility"
+              ]
+
+cols_to_drop = removals #+ month #+ hour_of_day #+ day_of_week
+existing_cols_to_drop = [col for col in cols_to_drop if col in bikes.columns]
+X = bikes.drop(columns="increase_stock")
+
 
 
 # Define model
@@ -28,7 +52,7 @@ def create_discriminant_model(model_type):
 # Cross-validation
 def kfold_cv(model, X, y, n_fold=10):
   cv = skl_ms.StratifiedKFold(n_splits=n_fold, random_state=42, shuffle=True)
-  thresholds = np.arange(0.01, 0.99, 0.01)
+  thresholds = np.arange(0.01, 0.9, 0.01)
   precisions = np.zeros(len(thresholds))
   recalls = np.zeros(len(thresholds))
   
@@ -61,6 +85,6 @@ def plot_PR_curve(x, y):
   plt.ylabel("Precision")
   plt.show()
 
-model = create_discriminant_model('QDA')
+model = create_discriminant_model('LDA')
 prec, rec = kfold_cv(model, X, y)
 plot_PR_curve(prec, rec)
