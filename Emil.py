@@ -60,67 +60,9 @@ y = (y == 1).astype(int)   # convert -1 → 0
 # -----------------------------
 
 model = skl_da.LinearDiscriminantAnalysis() # LDA
-# model = skl_da.QuadraticDiscriminantAnalysis(reg_param=0.1) # QDA
 
 # -----------------------------
-# 3) PLOTTING FUNCTION 
-# -----------------------------
-
-def plot_auc_curves(tprs, aucs, precisions, aps, mean_fpr, mean_recall):
-    mean_tpr = np.mean(tprs, axis=0)
-    std_tpr = np.std(tprs, axis=0)
-    mean_tpr[-1] = 1.0
-
-    mean_auc = np.mean(aucs)
-    std_auc = np.std(aucs)
-
-    plt.figure()
-    plt.plot(mean_fpr, mean_tpr,
-             label=f"Mean ROC (AUC = {mean_auc:.3f} ± {std_auc:.3f})")
-    plt.fill_between(
-        mean_fpr,
-        mean_tpr - std_tpr,
-        mean_tpr + std_tpr,
-        alpha=0.2
-    )
-    plt.xlabel("False Positive Rate")
-    plt.ylabel("True Positive Rate")
-    plt.legend()
-    
-
-    mean_precision = np.mean(precisions, axis=0)
-    std_precision = np.std(precisions, axis=0)
-
-    mean_ap = np.mean(aps)
-    std_ap = np.std(aps)
-
-    baseline = y.mean()
-
-    plt.figure()
-    plt.plot(
-        mean_recall,
-        mean_precision,
-        label=f"Mean PR (AP = {mean_ap:.3f} ± {std_ap:.3f})"
-    )
-    plt.fill_between(
-        mean_recall,
-        mean_precision - std_precision,
-        mean_precision + std_precision,
-        alpha=0.2
-    )
-
-    plt.hlines(
-        baseline, 0, 1, linestyles="--",
-        label=f"Baseline (p={baseline:.2f})"
-    )
-
-    plt.xlabel("Recall")
-    plt.ylabel("Precision")
-    plt.legend()
-    
-
-# -----------------------------
-# 4) K-FOLD LOOP 
+# 3) K-FOLD LOOP 
 # -----------------------------
 
 def k_fold_loop(model, x, y, r=0.5, n_splits=10, plot_curves=False):
@@ -196,7 +138,7 @@ def k_fold_loop(model, x, y, r=0.5, n_splits=10, plot_curves=False):
     return scores
 
 # -----------------------------
-# 5) THRESHOLD GRID SEARCH 
+# 4) THRESHOLD GRID SEARCH 
 # -----------------------------
 
 def grid_search_r(model, x, y, start=0.15, stop=0.95, num=80):
@@ -231,7 +173,7 @@ def grid_search_r(model, x, y, start=0.15, stop=0.95, num=80):
     plt.show()
 
 # -----------------------------
-# 6) FINAL EVALUATION
+# 5) MODEL EVALUATION
 # -----------------------------
 
 r = 0.33  # From grid search, this is the best threshold for F1 score
@@ -248,13 +190,15 @@ def get_roc_pr_auc(model, x, y, r):
           f"Precision: {scores['precision']:.3f} | "
           f"Recall: {scores['recall']:.3f} ")
 
-# RUN EVERYTHING
+# PERFORM GRID SEARCH
 # grid_search_r(model, x, y)
+
+# PERFROM MODEL EVALUATION
 # get_roc_pr_auc(model, x, y, r)
 
 
 # -----------------
-# 7) PERFORMANCE EVALUATION
+# 6) RESULTS FROM MODEL EVALUATION
 # -----------------
 
 # _____LDA_____
@@ -269,7 +213,7 @@ def get_roc_pr_auc(model, x, y, r):
 # r: 0.33 | ROC AUC: 0.918 | PR-AUC: 0.736 | Accuracy: 0.874 | F1: 0.670 | Precision: 0.634 | Recall: 0.720 
 
 # ----------------
-# 8) TEST
+# 7) MODEL TEST ON UNSEEN DATA
 # ----------------
 
 model = skl_da.LinearDiscriminantAnalysis().fit(x, y)
