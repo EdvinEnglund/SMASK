@@ -1,3 +1,7 @@
+"""
+This script includes training, hyperparameter tuning (by manual editing)
+and cross validation for the ADABoost classifier.
+"""
 import pandas as pd
 import numpy as np
 from sklearn.ensemble import AdaBoostClassifier

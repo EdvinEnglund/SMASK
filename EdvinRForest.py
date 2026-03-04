@@ -1,3 +1,8 @@
+"""
+This script includes training, hyperparameter tuning (by manual editing)
+and cross validation for the Random Forest classifier.
+"""
+
 import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
@@ -59,7 +64,6 @@ model = RandomForestClassifier(
     random_state=42
 )
 
-
 def plot_auc_curves(tprs, aucs, precisions, aps, mean_fpr, mean_recall):
     #ROC AUC
     mean_tpr = np.mean(tprs, axis=0)
@@ -115,7 +119,6 @@ def plot_auc_curves(tprs, aucs, precisions, aps, mean_fpr, mean_recall):
     plt.ylabel("Precision")
     plt.legend()
     plt.show()
-
 
 def k_fold_loop(model, x, y, r = 0.5, n_splits = 10, plot_curves = False):
     #set evaluation metrics

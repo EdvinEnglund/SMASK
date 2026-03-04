@@ -18,11 +18,11 @@ print(f"negatives: {negatives}")
 print(f"ratio: {positives/(positives + negatives)}")
 
 
-#mapping = {"low_bike_demand": -1, "high_bike_demand": 1}
+mapping = {"low_bike_demand": -1, "high_bike_demand": 1}
 
-#df["increase_stock"] = df["increase_stock"].map(mapping)
+df["increase_stock"] = df["increase_stock"].map(mapping)
 
-"""
+
 corr = df.corr()
 
 plt.imshow(corr)
@@ -30,6 +30,6 @@ plt.colorbar()
 plt.xticks(range(len(corr.columns)), corr.columns, rotation=90)
 plt.yticks(range(len(corr.columns)), corr.columns)
 plt.show()
-"""
+
 
 

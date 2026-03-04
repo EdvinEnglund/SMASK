@@ -1,3 +1,7 @@
+"""
+This script includes training, hyperparameter tuning (by manual editing)
+and cross validation for the kNN clasiifier.
+"""
 import pandas as pd
 import numpy as np
 
