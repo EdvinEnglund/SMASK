@@ -23,21 +23,25 @@ month = [c for c in df.columns if c.startswith("month")]
 day_of_week = [c for c in df.columns if c.startswith("day_of_week")]
 hour_of_day = [c for c in df.columns if c.startswith("hour_of_day")]
 
-removals = ["increase_stock",
+removals = (["increase_stock",
               "windspeed",
               #"summertime",
-              #"precip",
+              "precip",
               #"humidity",
               "dew",
               #"temp",
               "cloudcover",
-              "snowdepth",
+              #"snowdepth",
               "holiday",
               "weekday",
               #"visibility"
               ]
+            + month
+            #+ day_of_week
+            #+ hour_of_day
+            )
 
-cols_to_drop = removals + month #month, day_of_week, hour_of_day
+cols_to_drop = removals
 #filter inputs
 x = df.drop(columns=cols_to_drop)
 x_test = df_test.drop(columns=cols_to_drop)
@@ -55,10 +59,11 @@ model = RandomForestClassifier(
     min_samples_leaf=1,
     n_estimators=100,
     max_features="sqrt",
+    random_state=42
 )
 
 # --- FINAL TEST STARTS HERE ---
-r = 0.32
+r = 0.37
 model.fit(x, y)
 
 # predict probabilities for final test
@@ -156,7 +161,7 @@ def k_fold_loop(model, x, y, r = 0.5, n_splits = 10, plot_curves = False):
     mean_recall = np.linspace(0, 1, 100)
     kf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
     for i, (train_index, test_index) in enumerate(kf.split(x, y)):
-        print(f"running split {i + 1} out of {n_splits}")
+        #print(f"running split {i + 1} out of {n_splits}")
         x_train, x_test = x.iloc[train_index], x.iloc[test_index]
         y_train, y_test = y.iloc[train_index], y.iloc[test_index]
         model.fit(x_train, y_train)
@@ -170,6 +175,7 @@ def k_fold_loop(model, x, y, r = 0.5, n_splits = 10, plot_curves = False):
         pr_auc_s = average_precision_score(y_test, prob)
         pr_s = precision_score(y_test, pred)
         rec_s = recall_score(y_test, pred)
+        """ 
         print(f"r: {r} | "
               f"ROC AUC: {roc_auc_s:.3f} | "
               f"PR-AUC: {pr_auc_s:.3f} | "
@@ -177,6 +183,7 @@ def k_fold_loop(model, x, y, r = 0.5, n_splits = 10, plot_curves = False):
               f"F1 score: {f1_s:.3f} | "
               f"Precision: {pr_s:.3f} | "
               f"Recall: {rec_s:.3f} ")
+        """
         # accumulate scores
         f1 += f1_s
         accuracy += acc_s
@@ -240,7 +247,7 @@ def grid_search_r(model, x, y, start = 0.15, stop = 0.64, num = 50):
     plt.xlabel("r")
     plt.show()
 
-r = 0.32
+r = 0.37
 def get_roc_pr_auc(model, x, y, r):
     scores = k_fold_loop(model, x, y, r, plot_curves=True)
     print(f"K-fold CV scores:"

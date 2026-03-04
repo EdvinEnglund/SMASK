@@ -30,6 +30,7 @@ pr_auc = average_precision_score(y_test, prob)
 pr = precision_score(y_test, pred)
 rec = recall_score(y_test, pred)
 
+"""
 print(f"FINAL TEST: "
       f"ROC AUC: {roc_auc:.3f} | "
       f"PR-AUC: {pr_auc:.3f} | "
@@ -37,3 +38,4 @@ print(f"FINAL TEST: "
       f"F1 score: {f1:.3f} | "
       f"Precision: {pr:.3f} | "
       f"Recall: {rec:.3f} ")
+"""

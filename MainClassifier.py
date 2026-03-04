@@ -11,7 +11,7 @@ from sklearn.metrics import (accuracy_score,
                              )
 from sklearn.model_selection import train_test_split
 
-df = pd.read_csv('training_data_VT2026.csv')
+df = pd.read_csv('data/training_data_VT2026.csv')
 
 mapping = {"low_bike_demand": 0, "high_bike_demand": 1}
 df["increase_stock"] = df["increase_stock"].map(mapping)
