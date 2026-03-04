@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split, KFold, StratifiedKFold
+from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import (accuracy_score,
                              f1_score,
                              roc_auc_score,
@@ -16,8 +16,8 @@ pd.options.display.max_columns = None
 pd.options.display.max_rows = None
 
 #read data
-df = pd.read_csv('strat_preprocessed_training_data.csv',)
-df_test = pd.read_csv('strat_preprocessed_testing_data.csv',)
+df = pd.read_csv('data/preprocessed_training_data.csv', )
+df_test = pd.read_csv('data/preprocessed_testing_data.csv', )
 #define potential removals
 month = [c for c in df.columns if c.startswith("month")]
 day_of_week = [c for c in df.columns if c.startswith("day_of_week")]
@@ -44,13 +44,10 @@ removals = (["increase_stock",
 cols_to_drop = removals
 #filter inputs
 x = df.drop(columns=cols_to_drop)
-x_test = df_test.drop(columns=cols_to_drop)
 #define output
 y = df['increase_stock']
-y_test = df_test['increase_stock']
 #convert -1 to 0
 y = (y == 1).astype(int)
-y_test = (y_test == 1).astype(int)
 
 #define model
 model = RandomForestClassifier(
@@ -62,31 +59,6 @@ model = RandomForestClassifier(
     random_state=42
 )
 
-# --- FINAL TEST STARTS HERE ---
-r = 0.37
-model.fit(x, y)
-
-# predict probabilities for final test
-prob = model.predict_proba(x_test)[:, 1]
-pred = (prob >= r).astype(int)
-
-f1 = f1_score(y_test, pred)
-accuracy = accuracy_score(y_test, pred)
-roc_auc = roc_auc_score(y_test, prob)
-pr_auc = average_precision_score(y_test, prob)
-pr = precision_score(y_test, pred)
-rec = recall_score(y_test, pred)
-
-print(f"FINAL TEST"
-      f"r: {r} | "
-      f"ROC AUC: {roc_auc:.3f} | "
-      f"PR-AUC: {pr_auc:.3f} | "
-      f"Accurancy: {accuracy:.3f} | "
-      f"F1 score: {f1:.3f} | "
-      f"Precision: {pr:.3f} | "
-      f"Recall: {rec:.3f} ")
-
-# --- FINAL TEST ENDS HERE ---
 
 def plot_auc_curves(tprs, aucs, precisions, aps, mean_fpr, mean_recall):
     #ROC AUC
@@ -161,7 +133,7 @@ def k_fold_loop(model, x, y, r = 0.5, n_splits = 10, plot_curves = False):
     mean_recall = np.linspace(0, 1, 100)
     kf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
     for i, (train_index, test_index) in enumerate(kf.split(x, y)):
-        #print(f"running split {i + 1} out of {n_splits}")
+
         x_train, x_test = x.iloc[train_index], x.iloc[test_index]
         y_train, y_test = y.iloc[train_index], y.iloc[test_index]
         model.fit(x_train, y_train)
@@ -169,21 +141,15 @@ def k_fold_loop(model, x, y, r = 0.5, n_splits = 10, plot_curves = False):
         # predict probabilities
         prob = model.predict_proba(x_test)[:, 1]
         pred = (prob >= r).astype(int)
+
+        # get scores
         f1_s = f1_score(y_test, pred)
         acc_s = accuracy_score(y_test, pred)
         roc_auc_s = roc_auc_score(y_test, prob)
         pr_auc_s = average_precision_score(y_test, prob)
         pr_s = precision_score(y_test, pred)
         rec_s = recall_score(y_test, pred)
-        """ 
-        print(f"r: {r} | "
-              f"ROC AUC: {roc_auc_s:.3f} | "
-              f"PR-AUC: {pr_auc_s:.3f} | "
-              f"Accurancy: {acc_s:.3f} | "
-              f"F1 score: {f1_s:.3f} | "
-              f"Precision: {pr_s:.3f} | "
-              f"Recall: {rec_s:.3f} ")
-        """
+
         # accumulate scores
         f1 += f1_s
         accuracy += acc_s
@@ -191,7 +157,6 @@ def k_fold_loop(model, x, y, r = 0.5, n_splits = 10, plot_curves = False):
         pr_auc += pr_auc_s
         pr += pr_s
         rec += rec_s
-
 
         #For plotting curves
         if plot_curves:

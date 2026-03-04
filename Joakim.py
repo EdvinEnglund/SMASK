@@ -23,8 +23,8 @@ pd.options.display.max_rows = None
 # 1) READ DATA
 # -----------------------------
 
-df = pd.read_csv('full_preprocessed_training_data.csv')
-test_df = pd.read_csv('full_preprocessed_testing_data.csv')
+df = pd.read_csv('data/full_preprocessed_training_data.csv')
+test_df = pd.read_csv('data/full_preprocessed_testing_data.csv')
 #define potential removals
 month = [c for c in df.columns if c.startswith("month")]
 day_of_week = [c for c in df.columns if c.startswith("day_of_week")]

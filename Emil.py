@@ -23,7 +23,7 @@ pd.options.display.max_rows = None
 # 1) READ DATA
 # -----------------------------
 
-df = pd.read_csv('strat_preprocessed_training_data.csv')
+df = pd.read_csv('data/strat_preprocessed_training_data.csv')
 
 #define potential removals
 month = [c for c in df.columns if c.startswith("month")]
@@ -219,7 +219,7 @@ def get_roc_pr_auc(model, x, y, r):
 model = skl_da.LinearDiscriminantAnalysis().fit(x, y)
 
 def test_model(model):
-    bikes = pd.read_csv('strat_preprocessed_testing_data.csv')
+    bikes = pd.read_csv('data/strat_preprocessed_testing_data.csv')
     X_test = bikes.drop(columns=cols_to_drop)
     y_test = bikes['increase_stock']
     y_test = (y_test == 1).astype(int)

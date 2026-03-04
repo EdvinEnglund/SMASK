@@ -12,8 +12,8 @@ from sklearn.metrics import (
 # -----------------------------
 # 1) READ DATA
 # -----------------------------
-train_df = pd.read_csv("full_preprocessed_training_data.csv")
-test_df  = pd.read_csv("full_preprocessed_testing_data.csv")
+train_df = pd.read_csv("data/full_preprocessed_training_data.csv")
+test_df  = pd.read_csv("data/full_preprocessed_testing_data.csv")
 
 y_train = (train_df["increase_stock"] == 1).astype(int)
 y_test  = (test_df["increase_stock"] == 1).astype(int)

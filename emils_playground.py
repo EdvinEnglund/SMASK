@@ -7,7 +7,7 @@ import sklearn.discriminant_analysis as skl_da
 
 
 # Data
-bikes = pd.read_csv('preprocessed_training_data.csv')
+bikes = pd.read_csv('data/preprocessed_training_data.csv')
 y = bikes['increase_stock']
 
 

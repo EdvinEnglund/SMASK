@@ -8,7 +8,7 @@ from sklearn.metrics import f1_score
 # -----------------------------
 # 1) READ DATA
 # -----------------------------
-df = pd.read_csv("full_preprocessed_training_data.csv")
+df = pd.read_csv("data/full_preprocessed_training_data.csv")
 
 y = (df["increase_stock"] == 1).astype(int)
 

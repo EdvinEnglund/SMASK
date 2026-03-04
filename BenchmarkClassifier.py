@@ -11,7 +11,7 @@ from sklearn.metrics import (
 from matplotlib import pyplot as plt
 
 # Data
-bikes = pd.read_csv('strat_preprocessed_testing_data.csv')
+bikes = pd.read_csv('data/strat_preprocessed_testing_data.csv')
 y = bikes['increase_stock']
 
 # Convert negative class labels in validation data set from "-1" to "0"

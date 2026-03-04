@@ -27,5 +27,5 @@ for column in scaling_columns:
     train_df[column] = (train_df[column] - min_val) / (max_val - min_val)
     test_df[column] = (test_df[column] - min_val) / (max_val - min_val)
 
-train_df.to_csv('test_preprocessed_training_data.csv', index=False)
-test_df.to_csv('test_preprocessed_testing_data.csv', index=False)
+train_df.to_csv('data/preprocessed_training_data.csv', index=False)
+test_df.to_csv('data/preprocessed_testing_data.csv', index=False)

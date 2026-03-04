@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 pd.options.display.max_columns = None
 pd.options.display.max_rows = None
-df = pd.read_csv('preprocessed_training_data.csv')
+df = pd.read_csv('data/preprocessed_training_data.csv')
 
 positives = 0
 negatives = 0
