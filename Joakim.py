@@ -46,7 +46,7 @@ def prepare_data(df, target="increase_stock"):
 def train_model(
     X,
     y,
-    n_splits=5,
+    n_splits=10,
     threshold_range=(0.1, 0.7),
     threshold_steps=40,
     random_state=42
