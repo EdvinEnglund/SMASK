@@ -3,6 +3,7 @@ This script includes training, hyperparameter tuning (by manual editing)
 and cross validation for the ADABoost classifier.
 """
 import pandas as pd
+import numpy as np
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import StratifiedKFold
@@ -16,9 +17,7 @@ from sklearn.metrics import (
 )
 
 
-# ============================================================
 # DATA PREPARATION FUNCTION
-# ============================================================
 
 def prepare_data(df, target="increase_stock"):
     #month_cols = [c for c in df.columns if c.startswith("month")]
@@ -40,9 +39,9 @@ def prepare_data(df, target="increase_stock"):
     return X, y
 
 
-# ============================================================
+
 # TRAINING FUNCTION (CV + THRESHOLD SEARCH)
-# ============================================================
+
 
 def train_model(
     X,
@@ -134,9 +133,7 @@ def train_model(
     return model, best_threshold, best_scores
 
 
-# ============================================================
 # TESTING FUNCTION (NEW DATA)
-# ============================================================
 
 def test_model(model, X_test, y_test, threshold):
     """
@@ -162,14 +159,14 @@ def test_model(model, X_test, y_test, threshold):
     return scores
 
 # Load data
-train_df = pd.read_csv("strat_preprocessed_training_data.csv")
-test_df = pd.read_csv("strat_preprocessed_testing_data.csv")
+train_df = pd.read_csv("data/preprocessed_training_data.csv")
+test_df = pd.read_csv("data/preprocessed_testing_data.csv")
 
 # Prepare
 X_train, y_train = prepare_data(train_df)
 X_test, y_test = prepare_data(test_df)
 
-# Train (find best threshold)
+# Train
 model, best_r, cv_scores = train_model(X_train, y_train)
 
 # Test on unseen data
