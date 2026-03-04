@@ -1,328 +1,173 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.model_selection import KFold
+from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import (
     accuracy_score,
     f1_score,
     roc_auc_score,
-    roc_curve,
-    precision_recall_curve,
     average_precision_score,
-    recall_score,
     precision_score,
-    auc
+    recall_score
 )
-from matplotlib import pyplot as plt
 
-pd.options.display.max_columns = None
-pd.options.display.max_rows = None
 
-# -----------------------------
-# 1) READ DATA
-# -----------------------------
+# ============================================================
+# DATA PREPARATION FUNCTION
+# ============================================================
 
-df = pd.read_csv('full_preprocessed_training_data.csv')
-test_df = pd.read_csv('full_preprocessed_testing_data.csv')
-#define potential removals
-month = [c for c in df.columns if c.startswith("month")]
-day_of_week = [c for c in df.columns if c.startswith("day_of_week")]
-hour_of_day = [c for c in df.columns if c.startswith("hour_of_day")]
+def prepare_data(df, target="increase_stock"):
+    #month_cols = [c for c in df.columns if c.startswith("month")]
 
-removals = ["increase_stock",
-              "windspeed",
-              #"summertime",
-              "precip",
-              #"humidity",
-              "dew",
-              #"temp",
-              "cloudcover",
-              "snowdepth",
-              #"holiday",
-              #"weekday",
-              "visibility"
-              ]
+    removals = [
+        target,
+        "windspeed",
+        "precip",
+        "dew",
+        "cloudcover",
+        "snowdepth",
+    ]
 
-cols_to_drop = removals + month #+  hour_of_day #day_of_week
+    cols_to_drop = [c for c in removals  if c in df.columns]
 
-existing_cols_to_drop = [col for col in cols_to_drop if col in df.columns]
-x = df.drop(columns=existing_cols_to_drop)
+    X = df.drop(columns=cols_to_drop)
+    y = (df[target] == 1).astype(int)
 
-# define output
-y = df['increase_stock']
-y = (y == 1).astype(int)   # convert -1 → 0
+    return X, y
 
-test_month = [c for c in test_df.columns if c.startswith("month")]
-test_day_of_week = [c for c in test_df.columns if c.startswith("day_of_week")]
-test_hour_of_day = [c for c in test_df.columns if c.startswith("hour_of_day")]
 
-test_removals = ["increase_stock",
-              "windspeed",
-              #"summertime",
-              "precip",
-              #"humidity",
-              "dew",
-              #"temp",
-              "cloudcover",
-              "snowdepth",
-              #"holiday",
-              #"weekday",
-              "visibility"
-              ]
+# ============================================================
+# TRAINING FUNCTION (CV + THRESHOLD SEARCH)
+# ============================================================
 
-test_cols_to_drop = test_removals + test_month #+  hour_of_day #day_of_week
-
-test_existing_cols_to_drop = [col for col in test_cols_to_drop if col in test_df.columns]
-test_x = test_df.drop(columns=test_existing_cols_to_drop)
-
-# define output
-test_y = test_df['increase_stock']
-test_y = (test_y == 1).astype(int)   # convert -1 → 0
-
-# -----------------------------
-# 2) DEFINE ADABOOST MODEL
-# -----------------------------
-
-base_learner = DecisionTreeClassifier(
-    max_depth=2,   # VERY IMPORTANT for AdaBoost
+def train_model(
+    X,
+    y,
+    n_splits=5,
+    threshold_range=(0.1, 0.7),
+    threshold_steps=40,
     random_state=42
-)
+):
+    """
+    Performs cross-validation and finds best threshold based on F1.
+    Returns trained model, best threshold, and CV metrics.
+    """
 
-model = AdaBoostClassifier(
-    estimator=base_learner,
-    n_estimators=300,
-    learning_rate=0.05,
-    random_state=42
-)
-
-# -----------------------------
-# 3) PLOTTING FUNCTION 
-# -----------------------------
-
-def plot_auc_curves(tprs, aucs, precisions, aps, mean_fpr, mean_recall):
-    mean_tpr = np.mean(tprs, axis=0)
-    std_tpr = np.std(tprs, axis=0)
-    mean_tpr[-1] = 1.0
-
-    mean_auc = np.mean(aucs)
-    std_auc = np.std(aucs)
-
-    plt.figure()
-    plt.plot(mean_fpr, mean_tpr,
-             label=f"Mean ROC (AUC = {mean_auc:.3f} ± {std_auc:.3f})")
-    plt.fill_between(
-        mean_fpr,
-        mean_tpr - std_tpr,
-        mean_tpr + std_tpr,
-        alpha=0.2
-    )
-    plt.xlabel("False Positive Rate")
-    plt.ylabel("True Positive Rate")
-    plt.legend()
-    
-
-    mean_precision = np.mean(precisions, axis=0)
-    std_precision = np.std(precisions, axis=0)
-
-    mean_ap = np.mean(aps)
-    std_ap = np.std(aps)
-
-    baseline = y.mean()
-
-    plt.figure()
-    plt.plot(
-        mean_recall,
-        mean_precision,
-        label=f"Mean PR (AP = {mean_ap:.3f} ± {std_ap:.3f})"
-    )
-    plt.fill_between(
-        mean_recall,
-        mean_precision - std_precision,
-        mean_precision + std_precision,
-        alpha=0.2
+    base_learner = DecisionTreeClassifier(
+        max_depth=2,
+        random_state=random_state
     )
 
-    plt.hlines(
-        baseline, 0, 1, linestyles="--",
-        label=f"Baseline (p={baseline:.2f})"
+    model = AdaBoostClassifier(
+        estimator=base_learner,
+        n_estimators=300,
+        learning_rate=0.05,
+        random_state=random_state
     )
 
-    plt.xlabel("Recall")
-    plt.ylabel("Precision")
-    plt.legend()
-    
+    skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_state)
 
-# -----------------------------
-# 4) K-FOLD LOOP 
-# -----------------------------
+    thresholds = np.linspace(
+        threshold_range[0],
+        threshold_range[1],
+        threshold_steps
+    )
 
-accuracy = 0
-f1 = 0
-roc_auc = 0
-pr_auc = 0
-pr = 0
-rec = 0
+    best_threshold = 0.5
+    best_f1 = -1
 
-tprs = []
-aucs = []
-precisions = []
-aps = []
+    # Store average metrics for best threshold
+    best_scores = None
 
-mean_fpr = np.linspace(0, 1, 100)
-mean_recall = np.linspace(0, 1, 100)
+    for r in thresholds:
 
-model.fit(x, y)
-r=0.43
-prob = model.predict_proba(test_x)[:, 1]
-pred = (prob >= r).astype(int)
+        f1_total = 0
+        acc_total = 0
+        roc_total = 0
+        pr_total = 0
+        prec_total = 0
+        rec_total = 0
 
-f1 = f1_score(test_y, pred)
-accuracy = accuracy_score(test_y, pred)
-roc_auc = roc_auc_score(test_y, prob)
-pr_auc = average_precision_score(test_y, prob)
-pr = precision_score(test_y, pred)
-rec = recall_score(test_y, pred)
+        for train_idx, val_idx in skf.split(X, y):
 
-def k_fold_loop(model, x, y, r=0.5, n_splits=10, plot_curves=False):
+            X_train, X_val = X.iloc[train_idx], X.iloc[val_idx]
+            y_train, y_val = y.iloc[train_idx], y.iloc[val_idx]
 
-    accuracy = 0
-    f1 = 0
-    roc_auc = 0
-    pr_auc = 0
-    pr = 0
-    rec = 0
+            model.fit(X_train, y_train)
 
-    tprs = []
-    aucs = []
-    precisions = []
-    aps = []
+            prob = model.predict_proba(X_val)[:, 1]
+            pred = (prob >= r).astype(int)
 
-    mean_fpr = np.linspace(0, 1, 100)
-    mean_recall = np.linspace(0, 1, 100)
+            f1_total += f1_score(y_val, pred)
+            acc_total += accuracy_score(y_val, pred)
+            roc_total += roc_auc_score(y_val, prob)
+            pr_total += average_precision_score(y_val, prob)
+            prec_total += precision_score(y_val, pred)
+            rec_total += recall_score(y_val, pred)
 
-    model.fit(x, y)
+        f1_mean = f1_total / n_splits
 
-    prob = model.predict_proba(test_x)[:, 1]
-    pred = (prob >= r).astype(int)
+        if f1_mean > best_f1:
+            best_f1 = f1_mean
+            best_threshold = r
+            best_scores = {
+                "accuracy": acc_total / n_splits,
+                "f1": f1_mean,
+                "precision": prec_total / n_splits,
+                "recall": rec_total / n_splits,
+                "roc_auc": roc_total / n_splits,
+                "pr_auc": pr_total / n_splits,
+            }
 
-    kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
+    # Retrain on FULL dataset
+    model.fit(X, y)
 
-    for train_index, test_index in kf.split(x):
+    print("\nBest threshold:", round(best_threshold, 3))
+    print("Cross-validated scores:")
+    for k, v in best_scores.items():
+        print(f"{k}: {v:.3f}")
 
-        x_train, x_test = x.iloc[train_index], x.iloc[test_index]
-        y_train, y_test = y.iloc[train_index], y.iloc[test_index]
+    return model, best_threshold, best_scores
 
-        model.fit(x_train, y_train)
 
-        prob = model.predict_proba(x_test)[:, 1]
-        pred = (prob >= r).astype(int)
+# ============================================================
+# TESTING FUNCTION (NEW DATA)
+# ============================================================
 
-        f1 += f1_score(y_test, pred)
-        accuracy += accuracy_score(y_test, pred)
-        roc_auc += roc_auc_score(y_test, prob)
-        pr_auc += average_precision_score(y_test, prob)
-        pr += precision_score(y_test, pred)
-        rec += recall_score(y_test, pred)
+def test_model(model, X_test, y_test, threshold):
+    """
+    Evaluates trained model on completely unseen test data.
+    """
 
-        if plot_curves:
-            fpr, tpr, _ = roc_curve(y_test, prob)
-            roc_auc_for_plt = auc(fpr, tpr)
-
-            interp_tpr = np.interp(mean_fpr, fpr, tpr)
-            interp_tpr[0] = 0.0
-
-            tprs.append(interp_tpr)
-            aucs.append(roc_auc_for_plt)
-
-            precision, recall, _ = precision_recall_curve(y_test, prob)
-            ap = average_precision_score(y_test, prob)
-
-            interp_precision = np.interp(
-                mean_recall,
-                recall[::-1],
-                precision[::-1]
-            )
-
-            precisions.append(interp_precision)
-            aps.append(ap)
+    prob = model.predict_proba(X_test)[:, 1]
+    pred = (prob >= threshold).astype(int)
 
     scores = {
-        "accuracy": accuracy / n_splits,
-        "f1": f1 / n_splits,
-        "precision": pr / n_splits,
-        "recall": rec / n_splits,
-        "roc_auc": roc_auc / n_splits,
-        "pr_auc": pr_auc / n_splits
+        "accuracy": accuracy_score(y_test, pred),
+        "f1": f1_score(y_test, pred),
+        "precision": precision_score(y_test, pred),
+        "recall": recall_score(y_test, pred),
+        "roc_auc": roc_auc_score(y_test, prob),
+        "pr_auc": average_precision_score(y_test, prob),
     }
 
-    if plot_curves:
-        plot_auc_curves(tprs, aucs, precisions, aps, mean_fpr, mean_recall)
+    print("\nTest set performance:")
+    for k, v in scores.items():
+        print(f"{k}: {v:.3f}")
 
     return scores
 
-# -----------------------------
-# 5) THRESHOLD GRID SEARCH 
-# -----------------------------
+# Load data
+train_df = pd.read_csv("strat_preprocessed_training_data.csv")
+test_df = pd.read_csv("strat_preprocessed_testing_data.csv")
 
-def grid_search_r(model, x, y, start=0.15, stop=0.55, num=40):
+# Prepare
+X_train, y_train = prepare_data(train_df)
+X_test, y_test = prepare_data(test_df)
 
-    rs = np.linspace(start, stop, num)
+# Train (find best threshold)
+model, best_r, cv_scores = train_model(X_train, y_train)
 
-    accuracies = []
-    f1s = []
-    precisions = []
-    recalls = []
-
-    for r in rs:
-        scores = k_fold_loop(model, x, y, r)
-
-        accuracies.append(scores["accuracy"])
-        f1s.append(scores["f1"])
-        precisions.append(scores["precision"])
-        recalls.append(scores["recall"])
-
-        print(f"r: {r:.2f}")
-        print(f"Accuracy: {scores['accuracy']:.3f} "
-              f"F1: {scores['f1']:.3f} "
-              f"Precision: {scores['precision']:.3f} "
-              f"Recall: {scores['recall']:.3f} ")
-
-    plt.plot(rs, accuracies, label="accuracy")
-    plt.plot(rs, f1s, label="f1")
-    plt.plot(rs, precisions, label="precision")
-    plt.plot(rs, recalls, label="recall")
-    plt.legend()
-    plt.xlabel("r")
-    plt.show()
-
-# -----------------------------
-# 6) FINAL EVALUATION
-# -----------------------------
-
-#r = 0.43  # From grid search, this is the best threshold for F1 score
-
-def get_roc_pr_auc(model, x, y, r):
-    scores = k_fold_loop(model, x, y, r, plot_curves=True)
-
-    print(f"r: {r} | "
-          f"ROC AUC: {scores['roc_auc']:.3f} | "
-          f"PR-AUC: {scores['pr_auc']:.3f} | "
-          f"Accuracy: {scores['accuracy']:.3f} | "
-          f"F1: {scores['f1']:.3f} | "
-          f"Precision: {scores['precision']:.3f} | "
-          f"Recall: {scores['recall']:.3f} ")
-
-# RUN EVERYTHING
-#grid_search_r(model, x, y)
-#get_roc_pr_auc(model, x, y, r)
-print(f"r: {r} | "
-        f"ROC AUC: {roc_auc:.3f} | "
-        f"PR-AUC: {pr_auc:.3f} | "
-        f"Accuracy: {accuracy:.3f} | "
-        f"F1: {f1:.3f} | "
-        f"Precision: {pr:.3f} | "
-        f"Recall: {rec:.3f} ")
-
-# samma som edvin B = 300 M = 2 r: 0.43 | ROC AUC: 0.895 | PR-AUC: 0.710 | Accuracy: 0.851 | F1: 0.634 | Precision: 0.578 | Recall: 0.712  
-# Resultat testdata B = 300 M = 2 r: 0.43 | ROC AUC: 0.843 | PR-AUC: 0.509 | Accuracy: 0.817 | F1: 0.537 | Precision: 0.455 | Recall: 0.654 
+# Test on unseen data
+test_scores = test_model(model, X_test, y_test, best_r)
