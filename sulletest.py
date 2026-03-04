@@ -1,3 +1,7 @@
+"""
+This script includes training, hyperparameter tuning (by manual editing)
+and cross validation for the kNN clasiifier.
+"""
 import pandas as pd
 import numpy as np
 
@@ -12,8 +16,8 @@ from sklearn.metrics import (
 # -----------------------------
 # 1) READ DATA
 # -----------------------------
-train_df = pd.read_csv("full_preprocessed_training_data.csv")
-test_df  = pd.read_csv("full_preprocessed_testing_data.csv")
+train_df = pd.read_csv("data/full_preprocessed_training_data.csv")
+test_df  = pd.read_csv("data/full_preprocessed_testing_data.csv")
 
 y_train = (train_df["increase_stock"] == 1).astype(int)
 y_test  = (test_df["increase_stock"] == 1).astype(int)
