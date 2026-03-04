@@ -1,4 +1,7 @@
-import numpy as np
+"""
+This script includes training, hyperparameter tuning (by manual editing)
+and cross validation for the ADABoost classifier.
+"""
 import pandas as pd
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.tree import DecisionTreeClassifier

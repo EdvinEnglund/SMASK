@@ -1,3 +1,7 @@
+"""
+This script includes training, hyperparameter tuning (by manual editing)
+and cross validation for the kNN clasiifier.
+"""
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -8,7 +12,7 @@ from sklearn.metrics import f1_score
 # -----------------------------
 # 1) READ DATA
 # -----------------------------
-df = pd.read_csv("full_preprocessed_training_data.csv")
+df = pd.read_csv("data/full_preprocessed_training_data.csv")
 
 y = (df["increase_stock"] == 1).astype(int)
 
