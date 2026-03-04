@@ -68,8 +68,8 @@ model.fit(x_train, y_train)
 predictions = model.predict_proba(x_test)[:, 1]
 r = 0.37 # r = 0.37 was found in grid search in EdvinRForest
 predictions = (predictions >= r).astype(int)
-predictions = pd.DataFrame({"increase_stock": predictions})
-predictions.to_csv('predictions.csv', index=False)
+predictions = pd.DataFrame([predictions])
+predictions.to_csv('predictions.csv', index=False, header=False)
 
 
 
