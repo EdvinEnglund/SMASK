@@ -1,7 +1,7 @@
 """
-This script includes the full preprocessing, training and validation pipeline
-for the final RandomForestClassifier. The hyperparameter tuning and cross-validation
-for the model tuning is found in EdvinRForest.py
+This script includes the full splitting, preprocessing, training and validation pipeline
+for the final RandomForestClassifier after it was chosen as the final model.
+The hyperparameter tuning and kFold-tuning-validation for the model tuning is found in EdvinRForest.py
 """
 
 import pandas as pd
