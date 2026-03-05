@@ -1,5 +1,5 @@
 """
-This script includes training, hyperparameter tuning (by manual editing)
+This script includes training, hyperparameter tuning & feature selection (by manual editing)
 and cross validation for the Random Forest classifier.
 """
 
@@ -64,62 +64,6 @@ model = RandomForestClassifier(
     random_state=42
 )
 
-def plot_auc_curves(tprs, aucs, precisions, aps, mean_fpr, mean_recall):
-    #ROC AUC
-    mean_tpr = np.mean(tprs, axis=0)
-    std_tpr = np.std(tprs, axis=0)
-
-    mean_tpr[-1] = 1.0
-
-    mean_auc = np.mean(aucs)
-    std_auc = np.std(aucs)
-
-    plt.figure()
-    plt.plot(mean_fpr, mean_tpr, label=f"Mean ROC (AUC = {mean_auc:.3f} ± {std_auc:.3f})")
-    plt.fill_between(
-        mean_fpr,
-        mean_tpr - std_tpr,
-        mean_tpr + std_tpr,
-        alpha=0.2
-    )
-
-    plt.xlabel("False Positive Rate")
-    plt.ylabel("True Positive Rate")
-    plt.legend()
-    plt.show()
-
-    #PR AUC
-    mean_precision = np.mean(precisions, axis=0)
-    std_precision = np.std(precisions, axis=0)
-
-    mean_ap = np.mean(aps)
-    std_ap = np.std(aps)
-
-    baseline = y.mean()  # prevalence
-
-    plt.figure()
-    plt.plot(
-        mean_recall,
-        mean_precision,
-        label=f"Mean PR (AP = {mean_ap:.3f} ± {std_ap:.3f})"
-    )
-    plt.fill_between(
-        mean_recall,
-        mean_precision - std_precision,
-        mean_precision + std_precision,
-        alpha=0.2
-    )
-
-    plt.hlines(
-        baseline, 0, 1, linestyles="--",
-        label=f"Baseline (p={baseline:.2f})"
-    )
-
-    plt.xlabel("Recall")
-    plt.ylabel("Precision")
-    plt.legend()
-    plt.show()
-
 def k_fold_loop(model, x, y, r = 0.5, n_splits = 10, plot_curves = False):
     #set evaluation metrics
     accuracy = 0
@@ -161,22 +105,6 @@ def k_fold_loop(model, x, y, r = 0.5, n_splits = 10, plot_curves = False):
         pr += pr_s
         rec += rec_s
 
-        #For plotting curves
-        if plot_curves:
-            # ---- ROC ----
-            fpr, tpr, _ = roc_curve(y_test, prob)
-            roc_auc_for_plt = auc(fpr, tpr)
-            interp_tpr = np.interp(mean_fpr, fpr, tpr)
-            interp_tpr[0] = 0.0
-            tprs.append(interp_tpr)
-            aucs.append(roc_auc_for_plt)
-            # ---- PR ----
-            precision, recall, _ = precision_recall_curve(y_test, prob)
-            ap = average_precision_score(y_test, prob)
-            interp_precision = np.interp(mean_recall, recall[::-1], precision[::-1])
-            precisions.append(interp_precision)
-            aps.append(ap)
-
     scores = {
         "accuracy": accuracy / n_splits,
         "f1": f1 / n_splits,
@@ -185,8 +113,7 @@ def k_fold_loop(model, x, y, r = 0.5, n_splits = 10, plot_curves = False):
         "roc_auc": roc_auc / n_splits,
         "pr_auc": pr_auc / n_splits
     }
-    if plot_curves:
-        plot_auc_curves(tprs, aucs, precisions, aps, mean_fpr, mean_recall)
+
     return scores
 
 def grid_search_r(model, x, y, start = 0.15, stop = 0.64, num = 50):
@@ -215,7 +142,7 @@ def grid_search_r(model, x, y, start = 0.15, stop = 0.64, num = 50):
     plt.xlabel("r")
     plt.show()
 
-r = 0.37
+r = 0.37 # r-value found in grid-search
 def get_roc_pr_auc(model, x, y, r):
     scores = k_fold_loop(model, x, y, r, plot_curves=True)
     print(f"K-fold CV scores:"
