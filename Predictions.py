@@ -1,3 +1,5 @@
+# Script for predicting demand based on test data
+
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 

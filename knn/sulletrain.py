@@ -8,7 +8,7 @@ from sklearn.metrics import (
 )
 
 # Laod traindata
-df = pd.read_csv("strat_preprocessed_training_data.csv")
+df = pd.read_csv("data/preprocessed_training_data.csv")
 
 # train / test split
 train_df, test_df = train_test_split(

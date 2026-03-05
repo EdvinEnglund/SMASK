@@ -7,7 +7,7 @@ from sklearn.metrics import (
 from sulletrain import knn_model, r, removals
 
 # test data 
-test_data= "strat_preprocessed_testing_data.csv"
+test_data= "data/preprocessed_testing_data.csv"
 
 # load test data
 df = pd.read_csv(test_data)
